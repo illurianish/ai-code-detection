@@ -3,20 +3,14 @@
  * Handles user interactions, API communication, and result display
  */
 
-// Configuration
+// Config
 const CONFIG = {
-    // Change this to your deployed backend URL (Render, Replit, etc.)
-    // For local development: 'http://localhost:5000'
-    // For production: 'https://your-app-name.onrender.com'
     API_BASE_URL: 'https://ai-code-detection.onrender.com',
-    
-    // GitHub Pages demo mode (set to true for demo-only version)
     DEMO_MODE: false,
-    
     MAX_FILE_SIZE: 1024 * 1024, // 1MB
-    BACKEND_TIMEOUT: 5000, // 5 seconds
+    BACKEND_TIMEOUT: 5000,
     MIN_CODE_LENGTH: 10,
-    MAX_CODE_LENGTH: 100000, // 100KB
+    MAX_CODE_LENGTH: 100000,
     SAMPLE_CODES: {
         python: `def fibonacci(n):
     """Generate the nth Fibonacci number."""
@@ -113,7 +107,7 @@ int main() {
     }
 };
 
-// DOM Elements
+// DOM elements
 const elements = {
     fileInput: document.getElementById('file-input'),
     fileName: document.getElementById('file-name'),
@@ -131,45 +125,30 @@ const elements = {
     aboutModal: document.getElementById('about-modal')
 };
 
-// State
 let currentAnalysis = null;
 
-/**
- * Initialize the application
- */
 function init() {
     setupEventListeners();
     updateInputStats();
-    
-    // Check if backend is available
     checkBackendStatus();
 }
 
-/**
- * Set up all event listeners
- */
 function setupEventListeners() {
-    // File upload
     elements.fileInput.addEventListener('change', handleFileUpload);
     
-    // Code input changes
     elements.codeInput.addEventListener('input', updateInputStats);
     elements.codeInput.addEventListener('paste', () => {
-        setTimeout(updateInputStats, 10); // Delay to allow paste to complete
+        setTimeout(updateInputStats, 10);
     });
     
-    // Button clicks
     elements.analyzeBtn.addEventListener('click', analyzeCode);
     elements.clearBtn.addEventListener('click', clearInput);
     elements.sampleBtn.addEventListener('click', loadSampleCode);
     
-    // Language change
     elements.languageSelect.addEventListener('change', updateLanguageHighlight);
     
-    // Keyboard shortcuts
     document.addEventListener('keydown', handleKeyboardShortcuts);
     
-    // Click outside modal to close
     elements.aboutModal.addEventListener('click', (e) => {
         if (e.target === elements.aboutModal) {
             hideAbout();
@@ -177,21 +156,16 @@ function setupEventListeners() {
     });
 }
 
-/**
- * Handle file upload
- */
 function handleFileUpload(event) {
     const file = event.target.files[0];
     if (!file) return;
     
-    // Check file size
     if (file.size > CONFIG.MAX_FILE_SIZE) {
         showError(`File too large. Maximum size is ${CONFIG.MAX_FILE_SIZE / 1024 / 1024}MB`);
-        event.target.value = ''; // Clear the file input
+        event.target.value = '';
         return;
     }
     
-    // Check file type
     const extension = file.name.split('.').pop().toLowerCase();
     const languageMap = {
         'py': 'python',
@@ -215,11 +189,10 @@ function handleFileUpload(event) {
         updateLanguageHighlight();
     } else {
         showError('Unsupported file type');
-        event.target.value = ''; // Clear the file input
+        event.target.value = '';
         return;
     }
     
-    // Read file content
     const reader = new FileReader();
     reader.onload = (e) => {
         const content = e.target.result;
@@ -239,9 +212,6 @@ function handleFileUpload(event) {
     reader.readAsText(file);
 }
 
-/**
- * Update input statistics (character and line count)
- */
 function updateInputStats() {
     const code = elements.codeInput.value;
     const charCount = code.length;
@@ -250,13 +220,9 @@ function updateInputStats() {
     elements.charCount.textContent = `${charCount.toLocaleString()} characters`;
     elements.lineCount.textContent = `${lineCount.toLocaleString()} lines`;
     
-    // Enable/disable analyze button
     elements.analyzeBtn.disabled = code.trim().length < CONFIG.MIN_CODE_LENGTH;
 }
 
-/**
- * Load sample code based on selected language
- */
 function loadSampleCode() {
     const language = elements.languageSelect.value;
     const sampleCode = CONFIG.SAMPLE_CODES[language] || CONFIG.SAMPLE_CODES.python;
@@ -266,9 +232,6 @@ function loadSampleCode() {
     elements.fileName.textContent = 'Sample code loaded';
 }
 
-/**
- * Clear all input
- */
 function clearInput() {
     elements.codeInput.value = '';
     elements.fileInput.value = '';
@@ -277,18 +240,11 @@ function clearInput() {
     updateInputStats();
 }
 
-/**
- * Update language highlighting (if using a syntax highlighter)
- */
 function updateLanguageHighlight() {
-    // This would integrate with Prism.js or similar if needed
     const language = elements.languageSelect.value;
     console.log(`Language changed to: ${language}`);
 }
 
-/**
- * Handle keyboard shortcuts
- */
 function handleKeyboardShortcuts(event) {
     if (event.ctrlKey || event.metaKey) {
         switch (event.key) {
@@ -310,9 +266,6 @@ function handleKeyboardShortcuts(event) {
     }
 }
 
-/**
- * Check if backend is available
- */
 async function checkBackendStatus() {
     try {
         const controller = new AbortController();
@@ -337,9 +290,6 @@ async function checkBackendStatus() {
     }
 }
 
-/**
- * Analyze the code using the backend API
- */
 async function analyzeCode() {
     const code = elements.codeInput.value.trim();
     const language = elements.languageSelect.value;
@@ -380,7 +330,7 @@ async function analyzeCode() {
     } catch (error) {
         console.error('Analysis error:', error);
         
-        // Fallback to demo mode if backend is unavailable
+        // fallback to demo mode
         if (error.message.includes('fetch')) {
             const demoResult = generateDemoResult(code, language);
             currentAnalysis = demoResult;
@@ -403,7 +353,6 @@ function generateDemoResult(code, language) {
     const hasComments = /\/\/|#|\/\*|\*\//.test(code);
     const hasFunctions = /function|def |func |fn |sub /.test(code);
     
-    // Simple heuristics for demo
     const aiIndicators = [
         code.includes('result'),
         code.includes('data'),
@@ -451,11 +400,9 @@ function generateDemoResult(code, language) {
  * Display analysis results
  */
 function displayResults(result) {
-    // Show results section
     elements.resultsSection.style.display = 'block';
     elements.resultsSection.scrollIntoView({ behavior: 'smooth' });
     
-    // Update main result badge
     const resultBadge = document.getElementById('result-badge');
     const resultIcon = document.getElementById('result-icon');
     const resultText = document.getElementById('result-text');
@@ -464,7 +411,6 @@ function displayResults(result) {
     resultIcon.className = result.is_ai_generated ? 'fas fa-robot result-icon' : 'fas fa-user result-icon';
     resultText.textContent = result.is_ai_generated ? 'AI Generated' : 'Human Written';
     
-    // Update confidence score
     const confidenceValue = document.getElementById('confidence-value');
     const confidenceFill = document.getElementById('confidence-fill');
     
@@ -472,7 +418,6 @@ function displayResults(result) {
     confidenceValue.textContent = `${confidencePercent}%`;
     confidenceFill.style.width = `${confidencePercent}%`;
     
-    // Update analysis details with proper handling of probabilities
     const aiProb = result.ai_probability || 0;
     const humanProb = result.human_probability || 0;
     
@@ -481,7 +426,6 @@ function displayResults(result) {
     document.getElementById('lines-of-code').textContent = result.analysis.lines_of_code || 0;
     document.getElementById('complexity-score').textContent = result.analysis.complexity_score || 0;
     
-    // Update reasoning
     const reasoningList = document.getElementById('reasoning-list');
     reasoningList.innerHTML = '';
     (result.reasons || []).forEach(reason => {
@@ -490,11 +434,9 @@ function displayResults(result) {
         reasoningList.appendChild(li);
     });
     
-    // Update features with enhanced display
     const featuresGrid = document.getElementById('features-grid');
     featuresGrid.innerHTML = '';
     
-    // Enhanced feature labels and formatting
     const enhancedFeatures = [
         {
             name: 'Code Structure',
@@ -526,13 +468,11 @@ function displayResults(result) {
     ];
     
     enhancedFeatures.forEach(category => {
-        // Create category header
         const categoryHeader = document.createElement('div');
         categoryHeader.className = 'feature-category-header';
         categoryHeader.innerHTML = `<h4>${category.name}</h4>`;
         featuresGrid.appendChild(categoryHeader);
         
-        // Add category items
         category.items.forEach(item => {
             const featureItem = document.createElement('div');
             featureItem.className = 'feature-item';
@@ -581,7 +521,7 @@ function showLoading() {
  */
 function hideLoading() {
     elements.loadingOverlay.classList.remove('show');
-    updateInputStats(); // This will re-enable the button if appropriate
+    updateInputStats();
 }
 
 /**

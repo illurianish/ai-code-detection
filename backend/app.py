@@ -71,11 +71,11 @@ def detect_ai_code():
             "reasons": prediction_result.get("reasons", [])
         }
         
-        logger.info(f"Prediction made: {prediction_result['prediction']} with confidence {prediction_result['confidence']:.2f}")
+        logger.info(f"Prediction: {prediction_result['prediction']} ({prediction_result['confidence']:.2f})")
         return jsonify(response)
         
     except Exception as e:
-        logger.error(f"Error in detection: {e}")
+        logger.error(f"Error: {e}")
         return jsonify({"error": f"Analysis failed: {str(e)}"}), 500
 
 @app.route('/stats', methods=['GET'])
