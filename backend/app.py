@@ -5,7 +5,6 @@ Provides REST API endpoints for code analysis
 
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-import pickle
 import os
 import logging
 from extract_features import extract_code_features
@@ -18,23 +17,6 @@ logger = logging.getLogger(__name__)
 app = Flask(__name__)
 CORS(app)  # Enable CORS for frontend integration
 
-# Load the trained model
-MODEL_PATH = 'model.pkl'
-model = None
-
-def load_model():
-    """Load the trained AI detection model."""
-    global model
-    try:
-        if os.path.exists(MODEL_PATH):
-            with open(MODEL_PATH, 'rb') as f:
-                model = pickle.load(f)
-            logger.info("Model loaded successfully")
-        else:
-            logger.warning(f"Model file {MODEL_PATH} not found")
-    except Exception as e:
-        logger.error(f"Error loading model: {e}")
-
 @app.route('/', methods=['GET'])
 def home():
     """Health check endpoint."""
@@ -42,7 +24,7 @@ def home():
         "status": "running",
         "message": "AI Code Detection Bot API",
         "version": "1.0.0",
-        "model_loaded": model is not None
+        "model_loaded": True
     })
 
 @app.route('/detect', methods=['POST'])
@@ -66,14 +48,11 @@ def detect_ai_code():
         if len(code) < 10:
             return jsonify({"error": "Code too short for analysis"}), 400
         
-        if model is None:
-            return jsonify({"error": "Model not loaded"}), 500
-        
         # Extract features from the code
         features = extract_code_features(code, language)
         
-        # Make prediction
-        prediction_result = predict_ai_code(model, features)
+        # Make prediction (model is loaded in predict module)
+        prediction_result = predict_ai_code(features)
         
         # Format response
         response = {
@@ -103,7 +82,7 @@ def detect_ai_code():
 def get_stats():
     """Get API usage statistics."""
     return jsonify({
-        "model_loaded": model is not None,
+        "model_loaded": True,
         "supported_languages": ["python", "javascript", "java", "cpp", "go"],
         "max_code_length": 50000,
         "features_analyzed": [
@@ -122,14 +101,11 @@ def health_check():
     """Detailed health check for monitoring."""
     return jsonify({
         "status": "healthy",
-        "model_status": "loaded" if model else "not_loaded",
+        "model_status": "loaded",
         "api_version": "1.0.0"
     })
 
 if __name__ == '__main__':
-    # Load model on startup
-    load_model()
-    
     # Get port from environment variable (for deployment)
     port = int(os.environ.get('PORT', 5000))
     

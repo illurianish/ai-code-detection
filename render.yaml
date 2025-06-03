@@ -1,23 +1,21 @@
 services:
   - type: web
     name: ai-code-detection-api
-    env: python
+    runtime: python3
     buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn wsgi:app
+    startCommand: gunicorn wsgi:app --bind 0.0.0.0:$PORT
     envVars:
       - key: PYTHON_VERSION
-        value: 3.9.0
+        value: 3.11
       - key: FLASK_ENV
         value: production
       - key: PYTHONPATH
-        value: .
-      - key: PORT
-        value: 10000
+        value: /opt/render/project/src
     healthCheckPath: /health
     
   - type: static
     name: ai-code-detection-frontend
-    buildCommand: echo "Static site, no build needed"
+    buildCommand: echo "Static site ready"
     staticPublishPath: ./frontend
     headers:
       - path: /*
