@@ -353,46 +353,134 @@ function generateDemoResult(code, language) {
     const hasComments = /\/\/|#|\/\*|\*\//.test(code);
     const hasFunctions = /function|def |func |fn |sub /.test(code);
     
-    const aiIndicators = [
-        code.includes('result'),
-        code.includes('data'),
-        hasComments && code.match(/\/\/|#/g)?.length > lines * 0.3,
-        code.includes('Example usage'),
-        code.includes('This function'),
-        /\b(generate|create|build|process|handle)\b/i.test(code)
-    ];
+    // more sophisticated AI detection heuristics
+    let aiScore = 0;
+    let indicators = 0;
     
-    const aiScore = aiIndicators.filter(Boolean).length / aiIndicators.length;
-    const isAI = aiScore > 0.4;
-    const confidence = isAI ? 0.6 + (aiScore * 0.3) : 0.7 - (aiScore * 0.3);
+    // check for AI-typical variable names
+    const aiVarNames = ['result', 'data', 'output', 'value', 'item', 'temp', 'response'];
+    let aiVarCount = 0;
+    aiVarNames.forEach(name => {
+        if (new RegExp(`\\b${name}\\b`, 'gi').test(code)) {
+            aiVarCount++;
+        }
+    });
+    if (aiVarCount > 2) aiScore += 2;
+    else if (aiVarCount > 0) aiScore += 1;
+    indicators += 2;
+    
+    // check for AI-typical function names
+    const aiFuncNames = ['process', 'handle', 'execute', 'run', 'generate', 'create', 'calculate'];
+    let aiFuncCount = 0;
+    aiFuncNames.forEach(name => {
+        if (new RegExp(`\\b${name}\\b`, 'gi').test(code)) {
+            aiFuncCount++;
+        }
+    });
+    if (aiFuncCount > 1) aiScore += 2;
+    else if (aiFuncCount > 0) aiScore += 1;
+    indicators += 2;
+    
+    // check comment patterns
+    const aiCommentPatterns = ['example usage', 'this function', 'this will', 'note that', 'make sure'];
+    let aiCommentCount = 0;
+    aiCommentPatterns.forEach(pattern => {
+        if (code.toLowerCase().includes(pattern)) {
+            aiCommentCount++;
+        }
+    });
+    if (aiCommentCount > 1) aiScore += 2;
+    else if (aiCommentCount > 0) aiScore += 1;
+    indicators += 2;
+    
+    // check formatting consistency
+    const indentationLevels = [];
+    lines.split('\n').forEach(line => {
+        if (line.trim()) {
+            const indent = line.length - line.trimLeft().length;
+            indentationLevels.push(indent);
+        }
+    });
+    
+    // calculate indentation consistency
+    let indentConsistency = 1.0;
+    if (indentationLevels.length > 1) {
+        const mean = indentationLevels.reduce((a, b) => a + b, 0) / indentationLevels.length;
+        const variance = indentationLevels.reduce((sum, indent) => sum + Math.pow(indent - mean, 2), 0) / indentationLevels.length;
+        indentConsistency = 1 / (1 + Math.sqrt(variance));
+    }
+    
+    if (indentConsistency > 0.9) aiScore += 1;
+    else if (indentConsistency < 0.7) aiScore -= 1;
+    indicators += 1;
+    
+    // comment ratio analysis
+    const commentMatches = code.match(/\/\/|#|\/\*|\*\//g) || [];
+    const commentRatio = commentMatches.length / lines;
+    if (commentRatio > 0.3) aiScore += 1; // too many comments
+    else if (commentRatio < 0.05 && lines > 10) aiScore += 1; // too few comments
+    indicators += 1;
+    
+    // check for overly descriptive comments
+    const longComments = code.match(/(\/\/|#)[^\n]{50,}|\/\*[\s\S]{100,}\*\//g) || [];
+    if (longComments.length > 0) aiScore += 1;
+    indicators += 1;
+    
+    // normalize score
+    const normalizedScore = indicators > 0 ? aiScore / indicators : 0.4;
+    
+    // add slight randomness for realism
+    const randomFactor = (Math.random() - 0.5) * 0.1;
+    let finalScore = normalizedScore + randomFactor;
+    
+    // ensure score is within realistic bounds
+    finalScore = Math.max(0.15, Math.min(0.85, finalScore));
+    
+    const isAI = finalScore > 0.5;
+    const confidence = isAI ? finalScore : 1 - finalScore;
+    
+    // generate more realistic reasons
+    const reasons = [];
+    if (isAI) {
+        reasons.push(`Demo analysis: ${Math.round(confidence * 100)}% confidence in AI authorship`);
+        if (aiVarCount > 1) reasons.push("Uses common AI variable naming patterns");
+        if (aiFuncCount > 0) reasons.push("Contains AI-typical function names");
+        if (aiCommentCount > 0) reasons.push("Shows AI comment patterns");
+        if (indentConsistency > 0.9) reasons.push("Extremely consistent formatting suggests AI");
+        if (longComments.length > 0) reasons.push("Contains overly detailed explanatory comments");
+    } else {
+        reasons.push(`Demo analysis: ${Math.round(confidence * 100)}% confidence in human authorship`);
+        if (aiVarCount <= 1 && aiFuncCount <= 1) reasons.push("Lacks typical AI generation patterns");
+        if (indentConsistency < 0.8) reasons.push("Inconsistent formatting suggests human writing");
+        if (commentRatio < 0.2 && longComments.length === 0) reasons.push("Natural commenting style");
+        if (aiCommentCount === 0) reasons.push("No AI-typical explanatory patterns found");
+    }
     
     return {
         prediction: isAI ? "AI" : "Human",
         confidence: confidence,
         is_ai_generated: isAI,
-        ai_probability: isAI ? confidence : 1 - confidence,
-        human_probability: isAI ? 1 - confidence : confidence,
+        ai_probability: finalScore,
+        human_probability: 1 - finalScore,
         features: {
             lines_of_code: lines,
-            comment_ratio: hasComments ? 0.3 : 0.1,
+            comment_ratio: commentRatio,
             avg_line_length: chars / lines,
-            complexity_score: hasFunctions ? lines / 10 : lines / 20
+            complexity_score: hasFunctions ? Math.round(lines / 8) : Math.round(lines / 15),
+            ai_variable_names: aiVarCount,
+            ai_function_names: aiFuncCount,
+            ai_comment_patterns: aiCommentCount,
+            indentation_consistency: indentConsistency,
+            perfect_formatting_score: indentConsistency,
+            long_comment_count: longComments.length
         },
         analysis: {
             lines_of_code: lines,
-            comment_ratio: hasComments ? 0.3 : 0.1,
+            comment_ratio: commentRatio,
             avg_line_length: Math.round(chars / lines),
-            complexity_score: Math.round(hasFunctions ? lines / 10 : lines / 20)
+            complexity_score: hasFunctions ? Math.round(lines / 8) : Math.round(lines / 15)
         },
-        reasons: isAI ? [
-            `Demo mode: ${Math.round(confidence * 100)}% confidence in AI authorship`,
-            "Contains common AI patterns in variable naming",
-            "Formatting consistency suggests automated generation"
-        ] : [
-            `Demo mode: ${Math.round(confidence * 100)}% confidence in human authorship`,
-            "Natural code structure suggests human writing",
-            "Lacks typical AI generation patterns"
-        ]
+        reasons: reasons
     };
 }
 
