@@ -67,10 +67,3 @@ python run.py
 4. Push to the branch
 5. Create a Pull Request
 
-## License
-
-MIT License - feel free to use this project for any purpose.
-
-## Support
-
-For issues and feature requests, please create a GitHub issue.
