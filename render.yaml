@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: ai-code-detection-api
+    env: python
+    buildCommand: pip install -r requirements.txt
+    startCommand: cd backend && gunicorn app:app
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.9.0
+      - key: FLASK_ENV
+        value: production
+    healthCheckPath: /health
+    
+  - type: static
+    name: ai-code-detection-frontend
+    buildCommand: echo "Static site, no build needed"
+    staticPublishPath: ./frontend
+    headers:
+      - path: /*
+        name: Cache-Control
+        value: no-cache 

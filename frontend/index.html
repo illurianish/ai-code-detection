@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Code Detection Bot</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism-tomorrow.min.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fas fa-robot"></i>
+                    <h1>AI Code Detection Bot</h1>
+                </div>
+                <p class="subtitle">Detect AI-generated code with advanced pattern recognition</p>
+            </div>
+        </header>
+
+        <!-- Main Content -->
+        <main class="main">
+            <!-- Upload Section -->
+            <div class="card upload-section">
+                <div class="card-header">
+                    <h2><i class="fas fa-code"></i> Analyze Your Code</h2>
+                    <p>Paste your code below or upload a file to detect if it was AI-generated</p>
+                </div>
+                
+                <div class="input-section">
+                    <!-- File Upload -->
+                    <div class="file-upload-container">
+                        <input type="file" id="file-input" accept=".py,.java,.cpp,.cc,.cxx,.c,.html,.htm,.css,.js,.jsx" hidden>
+                        <button class="file-upload-btn" onclick="document.getElementById('file-input').click()">
+                            <i class="fas fa-upload"></i>
+                            Upload File
+                        </button>
+                        <span class="file-name" id="file-name">No file selected</span>
+                    </div>
+
+                    <!-- Language Selection -->
+                    <div class="language-selector">
+                        <label for="language-select">Language:</label>
+                        <select id="language-select">
+                            <option value="python">Python</option>
+                            <option value="java">Java</option>
+                            <option value="cpp">C++</option>
+                            <option value="html">HTML</option>
+                            <option value="css">CSS</option>
+                            <option value="javascript">JavaScript</option>
+                        </select>
+                    </div>
+
+                    <!-- Code Input -->
+                    <div class="code-input-container">
+                        <textarea 
+                            id="code-input" 
+                            placeholder="Paste your code here..."
+                            spellcheck="false"
+                        ></textarea>
+                        <div class="input-stats">
+                            <span id="char-count">0 characters</span>
+                            <span id="line-count">0 lines</span>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="action-buttons">
+                        <button id="analyze-btn" class="btn-primary">
+                            <i class="fas fa-search"></i>
+                            Analyze Code
+                        </button>
+                        <button id="clear-btn" class="btn-secondary">
+                            <i class="fas fa-trash"></i>
+                            Clear
+                        </button>
+                        <button id="sample-btn" class="btn-secondary">
+                            <i class="fas fa-flask"></i>
+                            Load Sample
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Section -->
+            <div class="card results-section" id="results-section" style="display: none;">
+                <div class="card-header">
+                    <h2><i class="fas fa-chart-bar"></i> Analysis Results</h2>
+                </div>
+                
+                <div class="results-content">
+                    <!-- Main Result -->
+                    <div class="main-result">
+                        <div class="result-badge" id="result-badge">
+                            <i class="result-icon" id="result-icon"></i>
+                            <span class="result-text" id="result-text">Analyzing...</span>
+                        </div>
+                        <div class="confidence-score">
+                            <span class="confidence-label">Confidence:</span>
+                            <span class="confidence-value" id="confidence-value">0%</span>
+                            <div class="confidence-bar">
+                                <div class="confidence-fill" id="confidence-fill"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Detailed Analysis -->
+                    <div class="analysis-details">
+                        <div class="analysis-grid">
+                            <div class="analysis-item">
+                                <h4>AI Probability</h4>
+                                <span class="analysis-value" id="ai-probability">0%</span>
+                            </div>
+                            <div class="analysis-item">
+                                <h4>Human Probability</h4>
+                                <span class="analysis-value" id="human-probability">0%</span>
+                            </div>
+                            <div class="analysis-item">
+                                <h4>Lines of Code</h4>
+                                <span class="analysis-value" id="lines-of-code">0</span>
+                            </div>
+                            <div class="analysis-item">
+                                <h4>Complexity Score</h4>
+                                <span class="analysis-value" id="complexity-score">0</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Reasoning -->
+                    <div class="reasoning-section">
+                        <h3><i class="fas fa-lightbulb"></i> Analysis Reasoning</h3>
+                        <ul class="reasoning-list" id="reasoning-list">
+                            <!-- Reasons will be populated here -->
+                        </ul>
+                    </div>
+
+                    <!-- Feature Details -->
+                    <div class="features-section">
+                        <h3><i class="fas fa-cogs"></i> Detected Features</h3>
+                        <div class="features-grid" id="features-grid">
+                            <!-- Features will be populated here -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loading-overlay">
+                <div class="spinner"></div>
+                <p>Analyzing your code...</p>
+            </div>
+
+            <!-- Error Message -->
+            <div class="error-message" id="error-message" style="display: none;">
+                <i class="fas fa-exclamation-triangle"></i>
+                <span id="error-text">An error occurred</span>
+                <button class="error-close" onclick="hideError()">×</button>
+            </div>
+        </main>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <div class="footer-content">
+                <p>&copy; 2024 AI Code Detection Bot. Built for educational and research purposes.</p>
+                <div class="footer-links">
+                    <a href="https://github.com/illurianish" target="_blank">
+                        <i class="fab fa-github"></i> GitHub
+                    </a>
+                    <a href="https://illurianish.com" target="_blank">
+                        <i class="fas fa-info-circle"></i> About
+                    </a>
+                </div>
+            </div>
+        </footer>
+
+        <!-- About Modal -->
+        <div class="modal" id="about-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>About AI Code Detection Bot</h3>
+                    <button class="modal-close" onclick="hideAbout()">×</button>
+                </div>
+                <div class="modal-body">
+                    <p>This tool uses advanced machine learning algorithms to detect whether code was likely generated by AI systems like ChatGPT, GitHub Copilot, or other code generation tools.</p>
+                    
+                    <h4>How it works:</h4>
+                    <ul>
+                        <li>Analyzes code structure and patterns</li>
+                        <li>Examines naming conventions and comments</li>
+                        <li>Evaluates formatting consistency</li>
+                        <li>Compares against known AI generation patterns</li>
+                    </ul>
+
+                    <h4>Supported Languages:</h4>
+                    <p>Python, Java, C++, HTML, CSS, JavaScript</p>
+
+                    <p><strong>Disclaimer:</strong> Results are estimates and should be used as guidance alongside human judgment.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="script.js"></script>
+</body>
+</html> 
