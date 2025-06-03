@@ -1,11 +1,11 @@
 """
-Prediction module for AI code detection.
-Uses the trained model to classify code as AI-generated or human-written.
+Prediction module for AI Code Detection Bot
 """
 
+import os
+import logging
 import numpy as np
 from typing import Dict, Any, List
-import logging
 
 logger = logging.getLogger(__name__)
 
@@ -18,82 +18,42 @@ FEATURE_NAMES = [
     "camelCase_count", "snake_case_count", "long_comment_count"
 ]
 
-
-class DummyModel:
-    """
-    A simple rule-based classifier for demonstration when no trained model is available.
-    """
-    def predict(self, X):
-        """Simple rule-based prediction."""
-        predictions = []
-        for features in X:
-            # Calculate AI score based on multiple indicators
-            ai_score = 0
+def create_dummy_model():
+    """Create a simple dummy model for testing or when main model is unavailable."""
+    class DummyModel:
+        def predict(self, X):
+            return [1]  # Always predict AI for demo
             
-            if len(features) >= 10:  # Ensure we have enough features
-                perfect_formatting = features[9] if len(features) > 9 else 0
-                ai_variables = features[6] if len(features) > 6 else 0
-                ai_functions = features[7] if len(features) > 7 else 0
-                comment_patterns = features[10] if len(features) > 10 else 0
-                comment_ratio = features[2] if len(features) > 2 else 0
-                indentation_consistency = features[5] if len(features) > 5 else 0
-                generic_name_ratio = features[8] if len(features) > 8 else 0
-                
-                # AI indicators (weighted scoring)
-                ai_score += perfect_formatting * 0.25  # Perfect formatting
-                ai_score += min(ai_variables / 2, 1) * 0.2  # AI variable names
-                ai_score += min(ai_functions / 1, 1) * 0.15  # AI function names  
-                ai_score += min(comment_patterns, 1) * 0.2  # AI comment patterns
-                ai_score += min(comment_ratio / 0.3, 1) * 0.1  # High comment ratio
-                ai_score += min(indentation_consistency, 1) * 0.05  # Perfect indentation
-                ai_score += min(generic_name_ratio / 0.3, 1) * 0.05  # Generic names
-            
-            # Lower threshold for more balanced predictions
-            predictions.append(1 if ai_score > 0.3 else 0)
-        
-        return np.array(predictions)
+        def predict_proba(self, X):
+            return [[0.3, 0.7]]  # 70% confidence in AI prediction
     
-    def predict_proba(self, X):
-        """Return prediction probabilities with dynamic confidence."""
-        predictions = []
-        
-        for features in X:
-            # Calculate dynamic AI score
-            ai_score = 0
-            
-            if len(features) >= 10:
-                perfect_formatting = features[9] if len(features) > 9 else 0
-                ai_variables = features[6] if len(features) > 6 else 0
-                ai_functions = features[7] if len(features) > 7 else 0
-                comment_patterns = features[10] if len(features) > 10 else 0
-                comment_ratio = features[2] if len(features) > 2 else 0
-                indentation_consistency = features[5] if len(features) > 5 else 0
-                generic_name_ratio = features[8] if len(features) > 8 else 0
-                
-                # Calculate weighted AI score
-                ai_score += perfect_formatting * 0.25
-                ai_score += min(ai_variables / 2, 1) * 0.2
-                ai_score += min(ai_functions / 1, 1) * 0.15
-                ai_score += min(comment_patterns, 1) * 0.2
-                ai_score += min(comment_ratio / 0.3, 1) * 0.1
-                ai_score += min(indentation_consistency, 1) * 0.05
-                ai_score += min(generic_name_ratio / 0.3, 1) * 0.05
-            
-            # Convert to probability (ensure it's between 0.15 and 0.85 for realism)
-            ai_prob = max(0.15, min(0.85, ai_score))
-            human_prob = 1 - ai_prob
-            
-            predictions.append([human_prob, ai_prob])
-        
-        return np.array(predictions)
+    return DummyModel()
 
+def load_model():
+    """Load the trained model or return a dummy model if not available."""
+    model_path = os.path.join(os.path.dirname(__file__), 'model.pkl')
+    
+    try:
+        if os.path.exists(model_path):
+            import pickle
+            with open(model_path, 'rb') as f:
+                model = pickle.load(f)
+            logger.info("Loaded production model")
+            return model
+    except Exception as e:
+        logger.warning(f"Error loading model: {e}")
+    
+    logger.info("Using dummy model for predictions")
+    return create_dummy_model()
 
-def predict_ai_code(model, features: Dict[str, Any]) -> Dict[str, Any]:
+# Load model at module level
+MODEL = load_model()
+
+def predict_ai_code(features: Dict[str, Any]) -> Dict[str, Any]:
     """
     Predict if code is AI-generated using the trained model.
     
     Args:
-        model: Trained scikit-learn model
         features: Dictionary of extracted features
     
     Returns:
@@ -104,8 +64,8 @@ def predict_ai_code(model, features: Dict[str, Any]) -> Dict[str, Any]:
         feature_vector = prepare_feature_vector(features)
         
         # Make prediction
-        prediction_proba = model.predict_proba([feature_vector])[0]
-        prediction = model.predict([feature_vector])[0]
+        prediction_proba = MODEL.predict_proba([feature_vector])[0]
+        prediction = MODEL.predict([feature_vector])[0]
         
         # Get confidence (probability of predicted class)
         if prediction == 1:  # AI-generated
@@ -130,10 +90,10 @@ def predict_ai_code(model, features: Dict[str, Any]) -> Dict[str, Any]:
         logger.error(f"Error in prediction: {e}")
         return {
             "prediction": "Unknown",
-            "confidence": 0.0,
+            "confidence": 0.5,
             "ai_probability": 0.5,
             "human_probability": 0.5,
-            "reasons": [f"Prediction failed: {str(e)}"]
+            "reasons": [f"Using fallback prediction due to error: {str(e)}"]
         }
 
 
@@ -296,11 +256,4 @@ def generate_human_reasoning(features: Dict[str, Any]) -> List[str]:
     if camel_case > 0 and snake_case > 0:
         reasons.append("Mixed naming conventions suggest human inconsistency")
     
-    return reasons
-
-
-def create_dummy_model():
-    """
-    Create a dummy model for testing when the real model isn't available.
-    """
-    return DummyModel() 
+    return reasons 

@@ -3,7 +3,7 @@ services:
     name: ai-code-detection-api
     env: python
     buildCommand: pip install -r requirements.txt
-    startCommand: cd backend && gunicorn --chdir . app:app
+    startCommand: gunicorn wsgi:app
     envVars:
       - key: PYTHON_VERSION
         value: 3.9.0
@@ -11,6 +11,8 @@ services:
         value: production
       - key: PYTHONPATH
         value: .
+      - key: PORT
+        value: 10000
     healthCheckPath: /health
     
   - type: static
