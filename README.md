@@ -14,7 +14,7 @@ An AI-powered tool that detects whether code is written by a human or generated 
 
 1. Clone the repository:
 ```bash
-git clone https://github.com/yourusername/ai-code-detection.git
+git clone https://github.com/illurianish/ai-code-detection.git
 cd ai-code-detection
 ```
 
